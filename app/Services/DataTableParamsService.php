@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Validator;
 class DataTableParamsService implements DataTableParams
 {
     public $page;
+
     public $perPage;
 
     public function __construct(Request $request)
@@ -25,10 +26,10 @@ class DataTableParamsService implements DataTableParams
             'search' => 'nullable|string',
         ]);
 
-        if (!empty($invalidKeys) || $validator->fails()) {
+        if (! empty($invalidKeys) || $validator->fails()) {
             $logData = [];
 
-            if (!empty($invalidKeys)) {
+            if (! empty($invalidKeys)) {
                 $invalidKeysData = [];
                 foreach ($invalidKeys as $key) {
                     $invalidKeysData[$key] = $queryParams[$key];

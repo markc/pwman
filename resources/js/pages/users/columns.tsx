@@ -27,7 +27,7 @@ export const columns: ColumnDef<User>[] = [
             <div className="flex h-full w-full items-center justify-center">
                 <IndeterminateCheckbox
                     checked={table.getIsAllPageRowsSelected()}
-                    onCheckedChange={(value) => {
+                    onCheckedChange={() => {
                         // If checkbox is currently checked (all rows selected) 
                         // or has indeterminate state (some rows selected)
                         // then clicking it should deselect all rows
@@ -72,7 +72,7 @@ export const columns: ColumnDef<User>[] = [
         header: 'Name',
         enableSorting: true,
         enableHiding: true, // Can be hidden from column selector
-        cell: ({ row, getValue, column, table }) => {
+        cell: ({ row, getValue, column }) => {
             // Access the cell's value
             const initialValue = getValue() as string;
             

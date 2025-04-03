@@ -1,6 +1,16 @@
 import { LucideIcon } from 'lucide-react';
 import type { Config } from 'ziggy-js';
 
+export interface User {
+    id: string;
+    name: string;
+    email: string;
+    email_verified_at: string | null;
+    created_at: string;
+    updated_at: string;
+    avatar?: string | null;
+}
+
 export interface Auth {
     user: User;
 }

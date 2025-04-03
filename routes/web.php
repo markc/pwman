@@ -16,9 +16,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('user-list', function () {
         return Inertia::render('users/index');
     })->name('users.list');
-    
+
     // User API endpoints - Using API middleware for proper response handling
-    Route::prefix('api')->group(function() {
+    Route::prefix('api')->group(function () {
         Route::get('users', [UserController::class, 'userDataTable'])->name('users.datatable');
         Route::post('users', [UserController::class, 'store'])->name('users.store');
         Route::put('users/{user}', [UserController::class, 'update'])->name('users.update');

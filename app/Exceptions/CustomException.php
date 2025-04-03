@@ -7,6 +7,7 @@ use Exception;
 class CustomException extends Exception
 {
     protected $code = 400;
+
     protected $message = 'An error occurred.';
 
     public function __construct($message = null, $code = null)

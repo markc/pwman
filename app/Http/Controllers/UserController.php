@@ -199,15 +199,15 @@ class UserController extends Controller
             $content = $request->getContent();
             $data = json_decode($content, true);
             $ids = $data['ids'] ?? [];
-            
+
             // Convert string IDs to integers if needed
             $ids = array_map(function ($id) {
                 return is_numeric($id) ? (int) $id : $id;
             }, $ids);
-            
+
             // Enable query logging to see all database operations
             \DB::enableQueryLog();
-            
+
             // Log the incoming request data for debugging
             Log::info('BatchDestroy request data', [
                 'raw_content' => $content,
@@ -216,7 +216,7 @@ class UserController extends Controller
                 'request_input' => $request->input('ids'),
                 'request_all' => $request->all(),
                 'content_type' => $request->header('Content-Type'),
-                'is_ajax' => $request->ajax() ? 'yes' : 'no'
+                'is_ajax' => $request->ajax() ? 'yes' : 'no',
             ]);
 
             if (empty($ids)) {
@@ -260,13 +260,13 @@ class UserController extends Controller
 
             // Get query log
             $queryLog = \DB::getQueryLog();
-            
+
             // Log the query information
             Log::info('Database queries executed:', [
                 'queries' => $queryLog,
-                'count' => count($queryLog)
+                'count' => count($queryLog),
             ]);
-            
+
             // Prepare the response data
             $responseData = [
                 'success' => $deletedCount > 0,

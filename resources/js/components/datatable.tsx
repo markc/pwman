@@ -20,10 +20,10 @@ import {
     useReactTable,
     VisibilityState,
 } from '@tanstack/react-table';
-import { ArrowDown, ArrowUp, ChevronDown, Download, FileDown, Plus, Search, Trash2 } from 'lucide-react';
+import { ArrowDown, ArrowUp, ChevronDown, FileDown, Plus, Search, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import { Button } from './ui/button';
-import { Checkbox } from './ui/checkbox';
+// import { Checkbox } from './ui/checkbox';
 import { Input } from './ui/input';
 import {
     Pagination,
@@ -42,7 +42,7 @@ import {
 } from './ui/select';
 
 interface DataTablePaginationProps {
-    table: reactTable<any>;
+    table: reactTable<unknown>;
     actualTotal?: number; // Actual total count from the server
 }
 
@@ -76,7 +76,7 @@ export function DataTable<TData, TValue>({
     onRowSelectionChange?: OnChangeFn<RowSelectionState>;
     initialRowSelection?: RowSelectionState;
     onDeleteSelected?: (selectedRows: RowSelectionState) => void;
-    tableRef?: React.MutableRefObject<any>; // Add optional table ref for external control
+    tableRef?: React.MutableRefObject<unknown>; // Add optional table ref for external control
     totalCount?: number; // The actual total count of records from the server
 }) {
     const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({
@@ -87,7 +87,7 @@ export function DataTable<TData, TValue>({
         'password': false,
         'remember_token': false,
         // Also update the column ID for the Last update column
-        'Last update': undefined, // Remove any old ID
+        'Last update': false, // Remove any old ID
         'Updated at': true // Show the Updated at column
     });
     const [sorting, setSorting] = useState<SortingState>(initialSorting);
@@ -223,14 +223,14 @@ export function DataTable<TData, TValue>({
                                     
                                     // Special handling for the "Last update" column which uses updated_at
                                     if (accessor === 'Last update') {
-                                        // @ts-ignore - Get the updated_at field directly
+                                        // @ts-expect-error - Get the updated_at field directly
                                         value = item['updated_at'];
                                         // Format date for CSV
                                         if (value) {
                                             value = new Date(value).toLocaleString();
                                         }
                                     } else {
-                                        // @ts-ignore - Standard accessor for other columns
+                                        // @ts-expect-error - Standard accessor for other columns
                                         value = item[accessor];
                                     }
                                     // Format the value for CSV
@@ -366,7 +366,7 @@ export function DataTable<TData, TValue>({
                     </TableBody>
                 </Table>
             </div>
-            <DataTablePagination table={table} actualTotal={totalCount} />
+            <DataTablePagination table={table as unknown as reactTable<unknown>} actualTotal={totalCount} />
         </div>
     );
 }

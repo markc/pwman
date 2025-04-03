@@ -20,21 +20,22 @@ export type DataTableProps<TData, TValue> = {
     initialRowSelection?: RowSelectionState; // Optional initial row selection state
     onRowSelectionChange?: OnChangeFn<RowSelectionState>; // Optional callback for row selection changes
     onDeleteSelected?: (selectedRows: RowSelectionState) => void; // Optional callback for deleting selected rows
-    tableRef?: React.MutableRefObject<any>; // Optional ref to access the table instance
+    tableRef?: React.MutableRefObject<unknown>; // Optional ref to access the table instance
     totalCount?: number; // Actual total count of records from the server
 };
 
 export type DataTablePaginationProps = {
-    table: Table<any>;
+    table: Table<unknown>;
 };
 
 declare module '@tanstack/react-table' {
-    interface ColumnMeta<TData extends unknown, TValue> {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    interface ColumnMeta<TData, TValue> {
         align?: 'left' | 'center' | 'right';
         onEdit?: (data: TData) => void;
         onDelete?: (data: TData) => void;
         // For editable cells
-        updateData?: (rowId: string | number, value: any) => void;
-        onCellBlur?: (rowId: string | number, value: any) => void;
+        updateData?: (rowId: string | number, value: string) => void;
+        onCellBlur?: (rowId: string | number, value: string) => void;
     }
 }

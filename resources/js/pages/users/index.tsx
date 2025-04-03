@@ -70,13 +70,13 @@ export default function Index() {
     const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
     
     // Create a ref to hold the table instance for direct manipulation
-    const tableRef = useRef(null);
+    const tableRef = useRef<{ toggleAllRowsSelected: (flag: boolean) => void } | null>(null);
 
     // State for delete confirmation modal when deleting multiple users
     const [isDeleteMultipleModalOpen, setIsDeleteMultipleModalOpen] = useState(false);
     const [rowsToDelete, setRowsToDelete] = useState<RowSelectionState>({});
 
-    const fetchData = async (page: number, search: string, pageSize: number) => {
+    const fetchData = useCallback(async (page: number, search: string, pageSize: number) => {
         setLoading(true);
 
         try {
@@ -112,7 +112,7 @@ export default function Index() {
         } finally {
             setLoading(false);
         }
-    };
+    }, [sorting]);
 
     useEffect(() => {
         if (prevSearchRef.current !== debouncedSearchQuery) {
@@ -131,7 +131,7 @@ export default function Index() {
         const pageIndex = pagination.pageIndex;
         const pageSize = pagination.pageSize;
         fetchData(pageIndex + 1, debouncedSearchQuery, pageSize);
-    }, [pagination, debouncedSearchQuery, sorting]); // Added sorting as dependency
+    }, [pagination, debouncedSearchQuery, sorting, fetchData]); // Added fetchData as dependency
 
     // Handle opening modal for adding a new user
     const handleAddUser = () => {
@@ -419,7 +419,7 @@ export default function Index() {
             // Refresh data to revert changes
             fetchData(pagination.pageIndex + 1, debouncedSearchQuery, pagination.pageSize);
         }
-    }, [pagination.pageIndex, pagination.pageSize, debouncedSearchQuery]);
+    }, [pagination.pageIndex, pagination.pageSize, debouncedSearchQuery, fetchData]);
     
     // Memoize columns to avoid unnecessary re-renders
     const columns = useMemo(() => {
@@ -438,7 +438,7 @@ export default function Index() {
             }
             
             // Add handlers to name column for inline editing
-            if (column.accessorKey === 'name') {
+            if ('accessorKey' in column && column.accessorKey === 'name') {
                 return {
                     ...column,
                     meta: {
