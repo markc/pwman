@@ -33,7 +33,7 @@ export function UserFormModal({ isOpen, onClose, onSuccess, onError, user, title
         user || {
             name: '',
             email: '',
-        }
+        },
     );
 
     // Reset form data when user changes
@@ -54,14 +54,19 @@ export function UserFormModal({ isOpen, onClose, onSuccess, onError, user, title
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         setIsSubmitting(true);
-        
+
         // Add a password field if creating a new user
-        const dataToSubmit = isEditMode ? formData : {
-            ...formData,
-            // Generate a random password for new users
-            password: Math.random().toString(36).slice(-10) + Math.random().toString(36).slice(-2).toUpperCase() + '!'
-        };
-        
+        const dataToSubmit = isEditMode
+            ? formData
+            : {
+                  ...formData,
+                  // Generate a random password for new users
+                  password:
+                      Math.random().toString(36).slice(-10) +
+                      Math.random().toString(36).slice(-2).toUpperCase() +
+                      '!',
+              };
+
         if (isEditMode && user) {
             // Update existing user with Inertia
             router.put(`/api/users/${user.id}`, dataToSubmit, {
@@ -76,7 +81,7 @@ export function UserFormModal({ isOpen, onClose, onSuccess, onError, user, title
                     const errorMessages = Object.values(errors).join('\n');
                     console.error('Update errors:', errors);
                     onError(errorMessages);
-                }
+                },
             });
         } else {
             // Create new user with Inertia
@@ -92,7 +97,7 @@ export function UserFormModal({ isOpen, onClose, onSuccess, onError, user, title
                     const errorMessages = Object.values(errors).join('\n');
                     console.error('Create errors:', errors);
                     onError(errorMessages);
-                }
+                },
             });
         }
     };
@@ -141,12 +146,7 @@ export function UserFormModal({ isOpen, onClose, onSuccess, onError, user, title
                         </div>
                     </div>
                     <DialogFooter>
-                        <Button 
-                            type="button" 
-                            variant="outline" 
-                            onClick={onClose}
-                            disabled={isSubmitting}
-                        >
+                        <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting}>
                             Cancel
                         </Button>
                         <Button type="submit" disabled={isSubmitting}>
@@ -155,8 +155,10 @@ export function UserFormModal({ isOpen, onClose, onSuccess, onError, user, title
                                     <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />
                                     {isEditMode ? 'Updating...' : 'Creating...'}
                                 </>
+                            ) : isEditMode ? (
+                                'Update'
                             ) : (
-                                isEditMode ? 'Update' : 'Create'
+                                'Create'
                             )}
                         </Button>
                     </DialogFooter>

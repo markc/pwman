@@ -1,9 +1,9 @@
 'use client';
 
+import { IndeterminateCheckbox } from '@/components/ui/indeterminate-checkbox';
 import { ColumnDef } from '@tanstack/react-table';
 import { Edit, Trash2 } from 'lucide-react';
 import moment from 'moment';
-import { IndeterminateCheckbox } from '@/components/ui/indeterminate-checkbox';
 
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -28,7 +28,7 @@ export const columns: ColumnDef<User>[] = [
                 <IndeterminateCheckbox
                     checked={table.getIsAllPageRowsSelected()}
                     onCheckedChange={() => {
-                        // If checkbox is currently checked (all rows selected) 
+                        // If checkbox is currently checked (all rows selected)
                         // or has indeterminate state (some rows selected)
                         // then clicking it should deselect all rows
                         if (table.getIsAllPageRowsSelected() || table.getIsSomePageRowsSelected()) {
@@ -75,26 +75,26 @@ export const columns: ColumnDef<User>[] = [
         cell: ({ row, getValue, column }) => {
             // Access the cell's value
             const initialValue = getValue() as string;
-            
+
             // For inline editing, we can use the meta property to store edit state
             return (
                 <div
-                    className="w-full h-full px-1 py-1 focus-within:ring-2 focus-within:ring-primary/20 rounded"
+                    className="focus-within:ring-primary/20 h-full w-full rounded px-1 py-1 focus-within:ring-2"
                     data-editable-cell
                 >
                     <input
                         className="w-full bg-transparent focus:outline-none"
                         value={initialValue}
-                        onChange={e => {
+                        onChange={(e) => {
                             // Get column meta info for the update handler
                             const updateData = column.columnDef.meta?.updateData;
-                            
+
                             // If an update handler is provided, call it with row ID and new value
                             if (updateData) {
                                 updateData(row.original.id, e.target.value);
                             }
                         }}
-                        onBlur={e => {
+                        onBlur={(e) => {
                             // Similar handling for blur event (when user is done editing)
                             const onCellBlur = column.columnDef.meta?.onCellBlur;
                             if (onCellBlur && e.target.value !== initialValue) {
@@ -125,7 +125,7 @@ export const columns: ColumnDef<User>[] = [
             return date ? moment(date).format('DD MMMM YYYY HH:mm') : 'Not verified';
         },
     },
-    
+
     // Password column (hashed) - hidden by default, limited display
     {
         accessorKey: 'password',
@@ -136,7 +136,7 @@ export const columns: ColumnDef<User>[] = [
             return '••••••••'; // Always show dots for security
         },
     },
-    
+
     // Remember Token column - hidden by default
     {
         accessorKey: 'remember_token',
@@ -148,7 +148,7 @@ export const columns: ColumnDef<User>[] = [
             return token ? '••••••••' : 'None'; // Always show dots for security if exists
         },
     },
-    
+
     // Created At column - hidden by default
     {
         id: 'Created at',
@@ -162,7 +162,7 @@ export const columns: ColumnDef<User>[] = [
             return date ? moment(date).format('DD MMMM YYYY') : '';
         },
     },
-    
+
     // Updated At column - visible by default
     {
         id: 'Updated at',
@@ -194,9 +194,9 @@ export const columns: ColumnDef<User>[] = [
                     <TooltipProvider>
                         <Tooltip>
                             <TooltipTrigger asChild>
-                                <Button 
-                                    variant="ghost" 
-                                    size="icon" 
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
                                     className="h-8 w-8"
                                     onClick={() => onEdit?.(user)}
                                 >
@@ -209,13 +209,13 @@ export const columns: ColumnDef<User>[] = [
                             </TooltipContent>
                         </Tooltip>
                     </TooltipProvider>
-                    
+
                     <TooltipProvider>
                         <Tooltip>
                             <TooltipTrigger asChild>
-                                <Button 
-                                    variant="ghost" 
-                                    size="icon" 
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
                                     className="h-8 w-8"
                                     onClick={() => onDelete?.(user)}
                                 >

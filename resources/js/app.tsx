@@ -1,10 +1,10 @@
 import '../css/app.css';
 
 import { createInertiaApp } from '@inertiajs/react';
+import axios from 'axios';
 import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';
 import { createRoot } from 'react-dom/client';
 import { initializeTheme } from './hooks/use-appearance';
-import axios from 'axios';
 
 // Configure axios to include CSRF token and Inertia headers
 axios.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest';

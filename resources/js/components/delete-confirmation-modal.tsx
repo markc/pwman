@@ -48,22 +48,24 @@ export function DeleteConfirmationModal({
             <AlertDialogContent className={appearance === 'dark' ? 'dark-theme' : ''}>
                 <AlertDialogHeader>
                     <AlertDialogTitle className="text-foreground">{title}</AlertDialogTitle>
-                    <AlertDialogDescription className="text-muted-foreground">{description}</AlertDialogDescription>
+                    <AlertDialogDescription className="text-muted-foreground">
+                        {description}
+                    </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
-                    <AlertDialogCancel 
+                    <AlertDialogCancel
                         disabled={isDeleting}
                         className="border-border bg-background text-foreground hover:bg-secondary"
                     >
                         Cancel
                     </AlertDialogCancel>
-                    <AlertDialogAction 
+                    <AlertDialogAction
                         onClick={(e) => {
                             e.preventDefault();
                             handleConfirm();
                         }}
                         disabled={isDeleting}
-                        className="bg-destructive text-white hover:bg-destructive/90 focus:ring-destructive"
+                        className="bg-destructive hover:bg-destructive/90 focus:ring-destructive text-white"
                     >
                         {isDeleting ? (
                             <>

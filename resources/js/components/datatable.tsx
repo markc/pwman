@@ -14,9 +14,9 @@ import {
     getSortedRowModel,
     OnChangeFn,
     PaginationState,
+    Table as reactTable,
     RowSelectionState,
     SortingState,
-    Table as reactTable,
     useReactTable,
     VisibilityState,
 } from '@tanstack/react-table';
@@ -33,13 +33,7 @@ import {
     PaginationNext,
     PaginationPrevious,
 } from './ui/pagination';
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from './ui/select';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 
 interface DataTablePaginationProps {
     table: reactTable<unknown>;
@@ -54,7 +48,7 @@ export function DataTable<TData, TValue>({
     setPagination,
     searchQuery,
     setSearchQuery,
-    addButtonText = "Add User",
+    addButtonText = 'Add User',
     onAddClick,
     onSortingChange,
     initialSorting = [],
@@ -81,18 +75,18 @@ export function DataTable<TData, TValue>({
 }) {
     const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({
         // By default, hide these columns
-        'id': false,
+        id: false,
         'Created at': false,
-        'email_verified_at': false,
-        'password': false,
-        'remember_token': false,
+        email_verified_at: false,
+        password: false,
+        remember_token: false,
         // Also update the column ID for the Last update column
         'Last update': false, // Remove any old ID
-        'Updated at': true // Show the Updated at column
+        'Updated at': true, // Show the Updated at column
     });
     const [sorting, setSorting] = useState<SortingState>(initialSorting);
     const [rowSelection, setRowSelection] = useState<RowSelectionState>(initialRowSelection);
-    
+
     // Handle sorting changes - either use external handler or local state
     const handleSortingChange: OnChangeFn<SortingState> = (updater) => {
         const newSorting = typeof updater === 'function' ? updater(sorting) : updater;
@@ -101,7 +95,7 @@ export function DataTable<TData, TValue>({
             onSortingChange(newSorting);
         }
     };
-    
+
     // Handle row selection changes
     const handleRowSelectionChange: OnChangeFn<RowSelectionState> = (updater) => {
         const newSelection = typeof updater === 'function' ? updater(rowSelection) : updater;
@@ -110,7 +104,7 @@ export function DataTable<TData, TValue>({
             onRowSelectionChange(newSelection);
         }
     };
-    
+
     const table = useReactTable({
         data,
         columns,
@@ -135,7 +129,7 @@ export function DataTable<TData, TValue>({
         enableRowSelection: true,
         enableMultiRowSelection: true,
     });
-    
+
     // If tableRef is provided, expose the table instance
     if (tableRef) {
         tableRef.current = table;
@@ -146,7 +140,7 @@ export function DataTable<TData, TValue>({
             <div className="flex items-center justify-between py-4">
                 <div className="flex items-center space-x-4">
                     {/* Page size selector */}
-                    <Select 
+                    <Select
                         value={pagination.pageSize.toString()}
                         onValueChange={(value) => {
                             const size = parseInt(value);
@@ -169,7 +163,7 @@ export function DataTable<TData, TValue>({
                             <SelectItem value="50">50 items</SelectItem>
                         </SelectContent>
                     </Select>
-                    
+
                     {/* Search input - moved to left, reduced width */}
                     <div className="relative">
                         <Search className="text-muted-foreground absolute top-2.5 left-2.5 h-4 w-4" />
@@ -181,21 +175,21 @@ export function DataTable<TData, TValue>({
                         />
                     </div>
                 </div>
-                
+
                 <div className="flex items-center gap-2">
                     {/* Delete selected rows button */}
                     {Object.keys(table.getState().rowSelection || {}).length > 0 && (
-                        <Button 
-                            variant="destructive" 
+                        <Button
+                            variant="destructive"
                             size="sm"
-                            className="gap-1 mr-2"
+                            className="mr-2 gap-1"
                             onClick={() => onDeleteSelected?.(table.getState().rowSelection)}
                         >
                             <Trash2 className="h-4 w-4" />
                             Delete {Object.keys(table.getState().rowSelection || {}).length} selected
                         </Button>
                     )}
-                    
+
                     <Button
                         variant="outline"
                         size="sm"
@@ -203,24 +197,28 @@ export function DataTable<TData, TValue>({
                         onClick={() => {
                             // Get all rows' data (either just visible rows or all rows)
                             const dataToExport = data;
-                            
+
                             // Get visible columns (excluding the select/checkbox column)
-                            const visibleColumns = table.getAllColumns()
-                                .filter(column => column.getIsVisible() && column.id !== 'select' && column.id !== 'actions');
-                            
+                            const visibleColumns = table
+                                .getAllColumns()
+                                .filter(
+                                    (column) =>
+                                        column.getIsVisible() && column.id !== 'select' && column.id !== 'actions',
+                                );
+
                             // Create CSV header row
-                            const headers = visibleColumns.map(column => {
+                            const headers = visibleColumns.map((column) => {
                                 // Use header display text or column ID
                                 return column.columnDef.header?.toString() || column.id;
                             });
-                            
+
                             // Create CSV rows for each data item
-                            const rows = dataToExport.map(item => {
-                                return visibleColumns.map(column => {
+                            const rows = dataToExport.map((item) => {
+                                return visibleColumns.map((column) => {
                                     // Access the data using the column's ID or accessorKey
                                     const accessor = column.id;
                                     let value;
-                                    
+
                                     // Special handling for the "Last update" column which uses updated_at
                                     if (accessor === 'Last update') {
                                         // @ts-expect-error - Get the updated_at field directly
@@ -234,16 +232,19 @@ export function DataTable<TData, TValue>({
                                         value = item[accessor];
                                     }
                                     // Format the value for CSV
-                                    return value !== null && value !== undefined ? 
-                                        typeof value === 'object' ? JSON.stringify(value) : String(value) : '';
+                                    return value !== null && value !== undefined
+                                        ? typeof value === 'object'
+                                            ? JSON.stringify(value)
+                                            : String(value)
+                                        : '';
                                 });
                             });
-                            
+
                             // Combine headers and rows
                             const csvContent = [headers, ...rows]
-                                .map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(','))
+                                .map((row) => row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(','))
                                 .join('\n');
-                            
+
                             // Create and download the CSV file
                             const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
                             const url = URL.createObjectURL(blob);
@@ -259,7 +260,7 @@ export function DataTable<TData, TValue>({
                         <FileDown className="h-4 w-4" />
                         Export CSV
                     </Button>
-                    
+
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                             <Button variant="outline" className="font-normal">
@@ -284,7 +285,7 @@ export function DataTable<TData, TValue>({
                                 })}
                         </DropdownMenuContent>
                     </DropdownMenu>
-                    
+
                     {onAddClick && (
                         <Button className="gap-1 font-medium" onClick={onAddClick}>
                             <Plus className="h-4 w-4" />
@@ -303,7 +304,7 @@ export function DataTable<TData, TValue>({
                                     const isSortable = header.column.getCanSort();
                                     // Get the current sort direction
                                     const sorted = header.column.getIsSorted();
-                                    
+
                                     return (
                                         <TableHead
                                             key={header.id}
@@ -311,15 +312,15 @@ export function DataTable<TData, TValue>({
                                                 width: header.getSize() !== 150 ? header.getSize() : undefined,
                                             }}
                                             className={`${
-                                                header.column.columnDef.meta?.align === 'right'
-                                                    ? 'text-right'
-                                                    : ''
+                                                header.column.columnDef.meta?.align === 'right' ? 'text-right' : ''
                                             } ${isSortable ? 'cursor-pointer select-none' : ''}`}
-                                            onClick={isSortable ? header.column.getToggleSortingHandler() : undefined}
+                                            onClick={
+                                                isSortable ? header.column.getToggleSortingHandler() : undefined
+                                            }
                                         >
                                             <div className="flex items-center gap-1">
                                                 {flexRender(header.column.columnDef.header, header.getContext())}
-                                                
+
                                                 {isSortable && (
                                                     <div className="ml-1 flex h-4 w-4 items-center justify-center">
                                                         {sorted === 'asc' ? (
@@ -374,15 +375,15 @@ export function DataTable<TData, TValue>({
 function DataTablePagination({ table, actualTotal }: DataTablePaginationProps) {
     const { pageIndex, pageSize } = table.getState().pagination;
     const pageCount = table.getPageCount();
-    
+
     // Use the actual total from server if provided, otherwise estimate
     const totalRows = actualTotal !== undefined ? actualTotal : pageCount * pageSize;
-    
+
     // Calculate the actual range of visible rows
     const rowCount = table.getRowModel().rows.length;
     const startRow = rowCount === 0 ? 0 : pageIndex * pageSize + 1;
     const endRow = startRow + rowCount - 1;
-    
+
     // Get information about selected rows
     const selectedRowCount = Object.keys(table.getState().rowSelection || {}).length;
 
@@ -404,24 +405,28 @@ function DataTablePagination({ table, actualTotal }: DataTablePaginationProps) {
 
     return (
         <div className="mt-4 flex items-center justify-between">
-            <div className="text-sm text-muted-foreground w-[240px]">
+            <div className="text-muted-foreground w-[240px] text-sm">
                 {selectedRowCount > 0 ? (
-                    <span className="font-medium text-primary">
+                    <span className="text-primary font-medium">
                         {selectedRowCount} {selectedRowCount === 1 ? 'row' : 'rows'} selected
                     </span>
                 ) : (
-                    <span>Showing {startRow} to {endRow} of {totalRows} results</span>
+                    <span>
+                        Showing {startRow} to {endRow} of {totalRows} results
+                    </span>
                 )}
             </div>
-            
-            <div className="flex-1 flex justify-center">
+
+            <div className="flex flex-1 justify-center">
                 <Pagination>
                     <PaginationContent>
                         <PaginationItem>
                             <PaginationPrevious
                                 aria-disabled={!table.getCanPreviousPage()}
                                 className={
-                                    !table.getCanPreviousPage() ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'
+                                    !table.getCanPreviousPage()
+                                        ? 'cursor-not-allowed opacity-50'
+                                        : 'cursor-pointer'
                                 }
                                 onClick={handlePreviousPage}
                             />
@@ -442,16 +447,18 @@ function DataTablePagination({ table, actualTotal }: DataTablePaginationProps) {
                         <PaginationItem>
                             <PaginationNext
                                 aria-disabled={!table.getCanNextPage()}
-                                className={!table.getCanNextPage() ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}
+                                className={
+                                    !table.getCanNextPage() ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'
+                                }
                                 onClick={handleNextPage}
                             />
                         </PaginationItem>
                     </PaginationContent>
                 </Pagination>
             </div>
-            
+
             {/* Action buttons for selected rows */}
-            <div className="w-[240px] flex justify-end">
+            <div className="flex w-[240px] justify-end">
                 {selectedRowCount > 0 && (
                     <Button variant="outline" size="sm" onClick={() => table.resetRowSelection()}>
                         Clear Selection
