@@ -12,6 +12,7 @@ import { LoaderCircle, ShieldX } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { toast, Toaster } from 'sonner';
 import { useDebounce } from '../../hooks/use-debounce';
+// Force a clean import of the columns
 import { columns as baseColumns, User } from './columns';
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -92,6 +93,14 @@ export default function Index() {
                 }
 
                 const response = await getData(page, search, pageSize, sortField, sortDirection);
+                console.log("API response data:", response.data);
+                
+                // Log the first data item to see all available fields
+                if (response.data.length > 0) {
+                    console.log("First data item fields:", Object.keys(response.data[0]));
+                    console.log("First data item complete:", response.data[0]);
+                }
+                
                 setData(response.data);
                 setPageCount(response.last_page);
                 // Store total count from response for accurate count display
@@ -144,10 +153,35 @@ export default function Index() {
     };
 
     // Handle opening modal for editing a user
-    const handleEditUser = (user: User) => {
-        setCurrentUser(user);
-        setFormModalTitle('Edit User');
-        setIsFormModalOpen(true);
+    const handleEditUser = async (user: User) => {
+        try {
+            // Fetch the latest user data directly from the server
+            const response = await fetch(`/api/users/${user.id}`);
+            
+            if (!response.ok) {
+                throw new Error(`Failed to fetch latest user data: ${response.statusText}`);
+            }
+            
+            const latestUserData = await response.json();
+            
+            // If this is a direct response, unwrap it from the 'data' property if necessary
+            const userData = latestUserData.data || latestUserData;
+            
+            console.log("Latest user data for modal:", userData);
+            
+            // Update with the latest data
+            setCurrentUser(userData);
+            setFormModalTitle('Edit User');
+            setIsFormModalOpen(true);
+        } catch (error) {
+            // If fetch fails, fall back to using the provided user data
+            console.error("Error fetching latest user data:", error);
+            toast.error("Could not fetch latest user data. Using cached data instead.");
+            
+            setCurrentUser(user);
+            setFormModalTitle('Edit User');
+            setIsFormModalOpen(true);
+        }
     };
 
     // Handle opening delete confirmation modal
@@ -375,37 +409,48 @@ export default function Index() {
         }
     };
 
-    // Handle inline name update
-    const handleNameUpdate = useCallback(async (userId: string | number, newName: string) => {
+    // Generic field update handler for all inline editable fields
+    const handleFieldUpdate = useCallback(async (userId: string | number, fieldName: string, newValue: string) => {
         // Optimistically update the local data
-        setData((prev) => prev.map((user) => (user.id === userId ? { ...user, name: newName } : user)));
+        setData((prev) => prev.map((user) => 
+            user.id === userId ? { ...user, [fieldName]: newValue } : user
+        ));
     }, []);
 
-    // Handle blur event (when user finishes editing) - save to database
-    const handleNameBlur = useCallback(
-        async (userId: string | number, newName: string) => {
+    // Generic blur event handler for when user finishes editing any field
+    const handleFieldBlur = useCallback(
+        async (userId: string | number, fieldName: string, newValue: string) => {
+            console.log(`handleFieldBlur called for ${fieldName} with value:`, newValue);
+            
             try {
                 // Show a loading toast
-                const toastId = toast.loading(`Updating user name...`);
-
-                // Send update to server
+                const toastId = toast.loading(`Updating ${fieldName}...`);
+                
+                // Create update payload with the specific field
+                const updateData = { [fieldName]: newValue };
+                console.log('Sending update to server:', { userId, fieldName, updateData });
+                
+                // Force this to be a direct fetch request to bypass any potential Inertia issues
                 await router.put(
                     `/api/users/${userId}`,
-                    {
-                        name: newName,
-                    },
+                    updateData,
                     {
                         preserveScroll: true,
                         preserveState: true,
-                        onSuccess: () => {
-                            // Update toast on success
-                            toast.success(`Name updated successfully`, {
+                        onSuccess: (response) => {
+                            console.log(`${fieldName} update success:`, response);
+                            // Update toast on success 
+                            toast.success(`${fieldName.charAt(0).toUpperCase() + fieldName.slice(1)} updated successfully`, {
                                 id: toastId,
                                 duration: 2000,
                             });
+                            
+                            // Refresh the data to ensure UI displays the updated value
+                            fetchData(pagination.pageIndex + 1, debouncedSearchQuery, pagination.pageSize);
                         },
                         onError: (errors) => {
-                            // Show error and revert to original name
+                            console.error(`${fieldName} update failed:`, errors);
+                            // Show error and revert
                             toast.error(`Update failed: ${Object.values(errors).join(', ')}`, {
                                 id: toastId,
                                 duration: 3000,
@@ -417,8 +462,8 @@ export default function Index() {
                     },
                 );
             } catch (error) {
-                console.error('Error updating name:', error);
-                toast.error(`Failed to update name`);
+                console.error(`Error updating ${fieldName}:`, error);
+                toast.error(`Failed to update ${fieldName}`);
 
                 // Refresh data to revert changes
                 fetchData(pagination.pageIndex + 1, debouncedSearchQuery, pagination.pageSize);
@@ -426,9 +471,38 @@ export default function Index() {
         },
         [pagination.pageIndex, pagination.pageSize, debouncedSearchQuery, fetchData],
     );
+    
+    // Specific field update handlers 
+    const handleNameUpdate = useCallback((userId: string | number, newValue: string) => {
+        handleFieldUpdate(userId, 'name', newValue);
+    }, [handleFieldUpdate]);
+    
+    const handleEmailUpdate = useCallback((userId: string | number, newValue: string) => {
+        handleFieldUpdate(userId, 'email', newValue);
+    }, [handleFieldUpdate]);
+    
+    const handleClearPwUpdate = useCallback((userId: string | number, newValue: string) => {
+        handleFieldUpdate(userId, 'clearpw', newValue);
+    }, [handleFieldUpdate]);
+    
+    // Specific field blur handlers
+    const handleNameBlur = useCallback((userId: string | number, newValue: string) => {
+        handleFieldBlur(userId, 'name', newValue);
+    }, [handleFieldBlur]);
+    
+    const handleEmailBlur = useCallback((userId: string | number, newValue: string) => {
+        handleFieldBlur(userId, 'email', newValue);
+    }, [handleFieldBlur]);
+    
+    const handleClearPwBlur = useCallback((userId: string | number, newValue: string) => {
+        handleFieldBlur(userId, 'clearpw', newValue);
+    }, [handleFieldBlur]);
 
     // Memoize columns to avoid unnecessary re-renders
     const columns = useMemo(() => {
+        // Log the base columns for debugging
+        console.log("Base columns:", baseColumns.map(col => col.id || col.accessorKey));
+        
         // Add handlers to all columns that need them
         return baseColumns.map((column) => {
             // Add handlers to action column
@@ -454,15 +528,48 @@ export default function Index() {
                     },
                 };
             }
+            
+            // Add handlers to email column for inline editing
+            if ('accessorKey' in column && column.accessorKey === 'email') {
+                return {
+                    ...column,
+                    meta: {
+                        ...column.meta,
+                        updateData: handleEmailUpdate,
+                        onCellBlur: handleEmailBlur,
+                    },
+                };
+            }
+            
+            // Add handlers to clearpw column for inline editing
+            if (column.id === 'clearpw' || ('accessorKey' in column && column.accessorKey === 'clearpw')) {
+                return {
+                    ...column,
+                    meta: {
+                        ...column.meta,
+                        updateData: handleClearPwUpdate,
+                        onCellBlur: handleClearPwBlur,
+                    },
+                };
+            }
 
             return column;
         });
-    }, [handleNameUpdate, handleNameBlur]);
+    }, [
+        handleNameUpdate, 
+        handleNameBlur, 
+        handleEmailUpdate, 
+        handleEmailBlur, 
+        handleClearPwUpdate, 
+        handleClearPwBlur,
+        handleEditUser,
+        handleDeleteClick
+    ]);
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="User list" />
-            <Toaster theme={appearance} position="bottom-right" />
+            <Toaster theme={appearance} position="top-right" closeButton />
 
             <div className="container space-y-6 p-5">
                 <HeadingSmall title="User" description="Manage user data and profile" />

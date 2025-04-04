@@ -4,6 +4,8 @@ import { IndeterminateCheckbox } from '@/components/ui/indeterminate-checkbox';
 import { ColumnDef } from '@tanstack/react-table';
 import { Edit, Trash2 } from 'lucide-react';
 import moment from 'moment';
+import { router } from '@inertiajs/react';
+import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -18,7 +20,33 @@ export type User = {
     created_at: string;
     updated_at: string;
     row_number?: number;
+    clearpw: string | null;
+    emailpw: string | null;
+    active: boolean;
+    gid: number;
+    uid: number;
+    home: string | null;
 };
+
+// Log a sample user structure for debugging
+console.log("User type definition:", {
+    id: "sample",
+    name: "Sample User",
+    email: "sample@example.com",
+    email_verified_at: "2023-01-01",
+    password: "hashed_pwd",
+    remember_token: "token",
+    created_at: "2023-01-01",
+    updated_at: "2023-01-01",
+    clearpw: "clear_password",
+    emailpw: "email_password",
+    active: true,
+    gid: 1000,
+    uid: 1000,
+    home: "/home/user"
+});
+
+console.log("Defining column definitions for User");
 
 export const columns: ColumnDef<User>[] = [
     {
@@ -76,6 +104,47 @@ export const columns: ColumnDef<User>[] = [
             // Access the cell's value
             const initialValue = getValue() as string;
 
+            // Function to save changes directly with fetch API
+            const saveChanges = async (newValue: string) => {
+                if (newValue !== initialValue) {
+                    try {
+                        // Direct API call to update the field without Inertia
+                        const response = await fetch(`/test-field-update/${row.original.id}/name/${encodeURIComponent(newValue)}`);
+                        const result = await response.json();
+                        
+                        console.log('Name update result:', result);
+                        
+                        if (result.success) {
+                            // Show success toast notification
+                            toast.success('Name updated successfully', {
+                                description: `Changed from "${initialValue}" to "${newValue}"`,
+                                duration: 3000,
+                            });
+                        } else {
+                            // Show error toast notification
+                            toast.error('Name update failed', {
+                                description: result.message || 'Please try again',
+                                duration: 5000,
+                            });
+                            console.error('Name update failed:', result.message);
+                        }
+                        
+                        // Also try the standard Inertia method as fallback
+                        const onCellBlur = column.columnDef.meta?.onCellBlur;
+                        if (onCellBlur) {
+                            onCellBlur(row.original.id, newValue);
+                        }
+                    } catch (error) {
+                        // Show error toast notification for exceptions
+                        toast.error('Error updating name', {
+                            description: 'Network or server error occurred',
+                            duration: 5000,
+                        });
+                        console.error('Error updating name:', error);
+                    }
+                }
+            };
+
             // For inline editing, we can use the meta property to store edit state
             return (
                 <div
@@ -86,19 +155,22 @@ export const columns: ColumnDef<User>[] = [
                         className="w-full bg-transparent focus:outline-none"
                         value={initialValue}
                         onChange={(e) => {
-                            // Get column meta info for the update handler
+                            // Get column meta info for the update handler (for optimistic UI updates)
                             const updateData = column.columnDef.meta?.updateData;
-
-                            // If an update handler is provided, call it with row ID and new value
                             if (updateData) {
                                 updateData(row.original.id, e.target.value);
                             }
                         }}
                         onBlur={(e) => {
-                            // Similar handling for blur event (when user is done editing)
-                            const onCellBlur = column.columnDef.meta?.onCellBlur;
-                            if (onCellBlur && e.target.value !== initialValue) {
-                                onCellBlur(row.original.id, e.target.value);
+                            // Save on blur
+                            saveChanges(e.target.value);
+                        }}
+                        onKeyDown={(e) => {
+                            // Save on Enter
+                            if (e.key === 'Enter') {
+                                e.preventDefault();
+                                e.currentTarget.blur(); // Remove focus after Enter
+                                saveChanges(e.currentTarget.value);
                             }
                         }}
                     />
@@ -106,12 +178,181 @@ export const columns: ColumnDef<User>[] = [
             );
         },
     },
-    // Email column - visible by default
+    // Email column - visible by default, with inline editing
     {
         accessorKey: 'email',
         header: 'Email',
         enableSorting: true,
         enableHiding: true, // Can be hidden from column selector
+        cell: ({ row, getValue, column }) => {
+            // Access the cell's value
+            const initialValue = getValue() as string;
+
+            // Function to save changes directly with fetch API
+            const saveChanges = async (newValue: string) => {
+                if (newValue !== initialValue) {
+                    try {
+                        // Direct API call to update the field without Inertia
+                        const response = await fetch(`/test-field-update/${row.original.id}/email/${encodeURIComponent(newValue)}`);
+                        const result = await response.json();
+                        
+                        console.log('Email update result:', result);
+                        
+                        if (result.success) {
+                            // Show success toast notification
+                            toast.success('Email updated successfully', {
+                                description: `Changed from "${initialValue}" to "${newValue}"`,
+                                duration: 3000,
+                            });
+                        } else {
+                            // Show error toast notification
+                            toast.error('Email update failed', {
+                                description: result.message || 'Please try again',
+                                duration: 5000,
+                            });
+                            console.error('Email update failed:', result.message);
+                        }
+                        
+                        // Also try the standard Inertia method as fallback
+                        const onCellBlur = column.columnDef.meta?.onCellBlur;
+                        if (onCellBlur) {
+                            onCellBlur(row.original.id, newValue);
+                        }
+                    } catch (error) {
+                        // Show error toast notification for exceptions
+                        toast.error('Error updating email', {
+                            description: 'Network or server error occurred',
+                            duration: 5000,
+                        });
+                        console.error('Error updating email:', error);
+                    }
+                }
+            };
+
+            // For inline editing, we can use the meta property to store edit state
+            return (
+                <div
+                    className="focus-within:ring-primary/20 h-full w-full rounded px-1 py-1 focus-within:ring-2"
+                    data-editable-cell
+                >
+                    <input
+                        className="w-full bg-transparent focus:outline-none"
+                        value={initialValue}
+                        type="email"
+                        onChange={(e) => {
+                            // Get column meta info for the update handler
+                            const updateData = column.columnDef.meta?.updateData;
+                            if (updateData) {
+                                updateData(row.original.id, e.target.value);
+                            }
+                        }}
+                        onBlur={(e) => {
+                            // Save on blur
+                            saveChanges(e.target.value);
+                        }}
+                        onKeyDown={(e) => {
+                            // Save on Enter
+                            if (e.key === 'Enter') {
+                                e.preventDefault();
+                                e.currentTarget.blur(); // Remove focus after Enter
+                                saveChanges(e.currentTarget.value);
+                            }
+                        }}
+                    />
+                </div>
+            );
+        },
+    },
+    // Clear Password column - explicitly visible, moved right after email, with inline editing
+    {
+        id: 'clearpw',
+        accessorKey: 'clearpw',
+        header: 'Clear Password',
+        enableSorting: false,
+        enableHiding: true,
+        cell: ({ row, getValue, column }) => {
+            // Access the cell's value
+            const initialValue = getValue() as string | null;
+            
+            // Function to save changes directly with fetch API
+            const saveChanges = async (newValue: string) => {
+                if (newValue !== initialValue) {
+                    try {
+                        // Direct API call to update the field without Inertia
+                        const response = await fetch(`/test-field-update/${row.original.id}/clearpw/${encodeURIComponent(newValue)}`);
+                        const result = await response.json();
+                        
+                        console.log('Clear Password update result:', result);
+                        
+                        if (result.success) {
+                            // Show success toast notification for password update
+                            toast.success('Password updated successfully', {
+                                description: 'Password has been changed and all related fields were synchronized',
+                                duration: 3000,
+                            });
+                            
+                            // Log the synced fields to console for verification
+                            if (result.synced_fields) {
+                                console.log('Password fields synchronized:', result.synced_fields);
+                            }
+                        } else {
+                            // Show error toast notification
+                            toast.error('Password update failed', {
+                                description: result.message || 'Please try again',
+                                duration: 5000,
+                            });
+                            console.error('Clear Password update failed:', result.message);
+                        }
+                        
+                        // Also try the standard Inertia method as fallback
+                        const onCellBlur = column.columnDef.meta?.onCellBlur;
+                        if (onCellBlur) {
+                            onCellBlur(row.original.id, newValue);
+                        }
+                    } catch (error) {
+                        // Show error toast notification for exceptions
+                        toast.error('Error updating password', {
+                            description: 'Network or server error occurred',
+                            duration: 5000,
+                        });
+                        console.error('Error updating clear password:', error);
+                    }
+                }
+            };
+            
+            // For inline editing, we can use the meta property to store edit state
+            return (
+                <div
+                    className="focus-within:ring-primary/20 h-full w-full rounded px-1 py-1 focus-within:ring-2"
+                    data-editable-cell
+                >
+                    <input
+                        className="w-full bg-transparent focus:outline-none"
+                        value={initialValue || ''}
+                        placeholder="---"
+                        onChange={(e) => {
+                            // Get column meta info for the update handler
+                            const updateData = column.columnDef.meta?.updateData;
+                            if (updateData) {
+                                updateData(row.original.id, e.target.value);
+                            }
+                        }}
+                        onBlur={(e) => {
+                            // Save on blur
+                            saveChanges(e.target.value);
+                        }}
+                        onKeyDown={(e) => {
+                            // Save on Enter
+                            if (e.key === 'Enter') {
+                                e.preventDefault();
+                                e.currentTarget.blur(); // Remove focus after Enter
+                                saveChanges(e.currentTarget.value);
+                            }
+                        }}
+                    />
+                </div>
+            );
+        },
     },
     // Email Verified At column - hidden by default
     {
@@ -174,6 +415,119 @@ export const columns: ColumnDef<User>[] = [
         cell: ({ row }) => {
             const date = row.getValue<string | Date>('Updated at');
             return date ? moment(date).format('DD MMMM YYYY') : '';
+        },
+    },
+    // Email Password column - hidden by default for security
+    {
+        accessorKey: 'emailpw',
+        header: 'Email Password',
+        enableSorting: false,
+        enableHiding: true,
+        cell: ({ row }) => {
+            const value = row.getValue<string | null>('emailpw');
+            return value || '---';
+        },
+    },
+    // Interactive Active status column - allows toggling and saves to database
+    {
+        accessorKey: 'active',
+        header: 'Active',
+        enableSorting: true,
+        enableHiding: true,
+        cell: ({ row }) => {
+            const user = row.original;
+            const active = row.getValue<boolean>('active');
+            
+            // Function to toggle active status
+            const toggleActive = (e: React.ChangeEvent<HTMLInputElement>) => {
+                // Prevent the event from bubbling up to avoid any row selection issues
+                e.stopPropagation();
+                
+                console.log("Checkbox clicked, current state:", active, "changing to:", e.target.checked);
+                
+                const newActiveState = e.target.checked;
+                
+                // Create a focused update payload with only what we're changing
+                // Explicitly use a primitive boolean value
+                const updateData = {
+                    active: newActiveState ? 1 : 0  // Send as 1/0 to avoid issues with boolean conversion
+                };
+                
+                console.log(`Updating user ${user.id} active status to:`, updateData.active);
+                
+                // Temporarily update the row data optimistically to avoid UI delay
+                // This immediately updates the checkbox visually
+                // @ts-ignore (accessing private method, but it's the recommended way to update a cell)
+                row._valuesCache.active = newActiveState;
+                
+                // Use router to send update to server
+                router.put(`/api/users/${user.id}`, updateData, {
+                    preserveScroll: true,  // Don't scroll the page
+                    preserveState: true,   // Keep form inputs intact
+                    only: ['users'],       // Only refresh the users data
+                    onSuccess: () => {
+                        console.log(`User ${user.name} status updated to ${newActiveState ? 'active' : 'inactive'}`);
+                        // No page refresh needed - the table will get new data from the server response
+                    },
+                    onError: (errors) => {
+                        console.error('Error updating user status:', errors);
+                        // Revert the optimistic update by toggling the checkbox back
+                        // @ts-ignore
+                        row._valuesCache.active = !newActiveState;
+                        // Force the table to re-render without a full page refresh
+                        row.toggleSelected(false);
+                        row.toggleSelected(false);
+                    }
+                });
+            };
+            
+            return (
+                <div className="flex items-center justify-center">
+                    <div onClick={(e) => e.stopPropagation()}>
+                        <input
+                            id={`active-${user.id}`}
+                            type="checkbox"
+                            checked={!!active}
+                            onChange={toggleActive}
+                            className="h-4 w-4 cursor-pointer rounded border-gray-300 text-primary focus:ring-primary"
+                            style={{ cursor: 'pointer' }}
+                        />
+                    </div>
+                </div>
+            );
+        },
+    },
+    // User ID column - hidden by default
+    {
+        accessorKey: 'uid',
+        header: 'UID',
+        enableSorting: true,
+        enableHiding: true,
+        cell: ({ row }) => {
+            const uid = row.getValue<number>('uid');
+            return uid || 1000;
+        },
+    },
+    // Group ID column - hidden by default
+    {
+        accessorKey: 'gid',
+        header: 'GID',
+        enableSorting: true,
+        enableHiding: true,
+        cell: ({ row }) => {
+            const gid = row.getValue<number>('gid');
+            return gid || 1000;
+        },
+    },
+    // Home directory column - hidden by default
+    {
+        accessorKey: 'home',
+        header: 'Home Directory',
+        enableSorting: true,
+        enableHiding: true,
+        cell: ({ row }) => {
+            const home = row.getValue<string | null>('home');
+            return home || '---';
         },
     },
     {

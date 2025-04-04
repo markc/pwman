@@ -34,8 +34,16 @@ class PasswordController extends Controller
             'password' => ['required', Password::defaults(), 'confirmed'],
         ]);
 
+        // Just update the password - the model mutator will handle
+        // synchronizing the password, clearpw, and emailpw fields
         $request->user()->update([
-            'password' => Hash::make($validated['password']),
+            'password' => $validated['password'], // No need to hash here, model will handle it
+        ]);
+
+        // Log a password update event (without the actual password)
+        \Log::info('User password updated', [
+            'user_id' => $request->user()->id,
+            'user_email' => $request->user()->email,
         ]);
 
         return back();

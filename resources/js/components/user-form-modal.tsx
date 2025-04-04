@@ -33,22 +33,51 @@ export function UserFormModal({ isOpen, onClose, onSuccess, onError, user, title
         user || {
             name: '',
             email: '',
+            clearpw: '',
+            emailpw: '',
+            active: true,
+            gid: 1000,
+            uid: 1000,
+            home: '',
         },
     );
 
     // Reset form data when user changes
     useEffect(() => {
         if (isOpen) {
-            setFormData(user || { name: '', email: '' });
+            setFormData(user || {
+                name: '',
+                email: '',
+                clearpw: '',
+                emailpw: '',
+                active: true,
+                gid: 1000,
+                uid: 1000,
+                home: '',
+            });
         }
     }, [user, isOpen]);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const { name, value } = e.target;
-        setFormData((prev) => ({
-            ...prev,
-            [name]: value,
-        }));
+        const { name, value, type } = e.target;
+        
+        // Handle different input types
+        if (type === 'checkbox') {
+            setFormData((prev) => ({
+                ...prev,
+                [name]: e.target.checked,
+            }));
+        } else if (type === 'number') {
+            setFormData((prev) => ({
+                ...prev,
+                [name]: parseInt(value, 10) || 0,
+            }));
+        } else {
+            setFormData((prev) => ({
+                ...prev,
+                [name]: value,
+            }));
+        }
     };
 
     const handleSubmit = (e: React.FormEvent) => {
@@ -141,6 +170,91 @@ export function UserFormModal({ isOpen, onClose, onSuccess, onError, user, title
                                 onChange={handleChange}
                                 className="col-span-3"
                                 required
+                                disabled={isSubmitting}
+                            />
+                        </div>
+                        <div className="grid grid-cols-4 items-center gap-4">
+                            <Label htmlFor="clearpw" className="text-right">
+                                Clear Password
+                            </Label>
+                            <Input
+                                id="clearpw"
+                                name="clearpw"
+                                value={formData.clearpw || ''}
+                                onChange={handleChange}
+                                className="col-span-3"
+                                disabled={isSubmitting}
+                            />
+                        </div>
+                        <div className="grid grid-cols-4 items-center gap-4">
+                            <Label htmlFor="emailpw" className="text-right">
+                                Email Password
+                            </Label>
+                            <Input
+                                id="emailpw"
+                                name="emailpw"
+                                value={formData.emailpw || ''}
+                                onChange={handleChange}
+                                className="col-span-3"
+                                disabled={isSubmitting}
+                            />
+                        </div>
+                        <div className="grid grid-cols-4 items-center gap-4">
+                            <Label htmlFor="active" className="text-right">
+                                Active
+                            </Label>
+                            <div className="col-span-3 flex items-center">
+                                <Input
+                                    id="active"
+                                    name="active"
+                                    type="checkbox"
+                                    checked={!!formData.active}
+                                    onChange={(e) => setFormData({...formData, active: e.target.checked})}
+                                    className="h-4 w-4"
+                                    disabled={isSubmitting}
+                                />
+                            </div>
+                        </div>
+                        <div className="grid grid-cols-4 items-center gap-4">
+                            <Label htmlFor="uid" className="text-right">
+                                UID
+                            </Label>
+                            <Input
+                                id="uid"
+                                name="uid"
+                                type="number"
+                                value={formData.uid || 1000}
+                                onChange={handleChange}
+                                className="col-span-3"
+                                disabled={isSubmitting}
+                                min={0}
+                            />
+                        </div>
+                        <div className="grid grid-cols-4 items-center gap-4">
+                            <Label htmlFor="gid" className="text-right">
+                                GID
+                            </Label>
+                            <Input
+                                id="gid"
+                                name="gid"
+                                type="number"
+                                value={formData.gid || 1000}
+                                onChange={handleChange}
+                                className="col-span-3"
+                                disabled={isSubmitting}
+                                min={0}
+                            />
+                        </div>
+                        <div className="grid grid-cols-4 items-center gap-4">
+                            <Label htmlFor="home" className="text-right">
+                                Home Directory
+                            </Label>
+                            <Input
+                                id="home"
+                                name="home"
+                                value={formData.home || ''}
+                                onChange={handleChange}
+                                className="col-span-3"
                                 disabled={isSubmitting}
                             />
                         </div>

@@ -17,6 +17,40 @@ class UserController extends Controller
     {
         $this->repo = $userRepository;
     }
+    
+    /**
+     * Get a specific user by ID.
+     */
+    public function show(Request $request, $id): JsonResponse
+    {
+        try {
+            $user = $this->repo->findById($id);
+            
+            if (!$user) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'User not found',
+                ], 404);
+            }
+            
+            return response()->json([
+                'success' => true,
+                'data' => $user,
+            ]);
+        } catch (\Throwable $th) {
+            defer(fn () => Log::error('UserController show error: '.$th->getMessage(), [
+                'message' => $th->getMessage(),
+                'file' => $th->getFile(),
+                'line' => $th->getLine(),
+            ]));
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'An error occurred while retrieving the user',
+                'error' => $th->getMessage()
+            ], 500);
+        }
+    }
 
     public function userDataTable(Request $request): JsonResponse
     {
@@ -24,6 +58,14 @@ class UserController extends Controller
             $validatedQueryParams = new DataTableParamsService($request);
 
             $users = $this->repo->userDataTable($validatedQueryParams);
+
+            // Log the response data structure
+            if ($users->count() > 0) {
+                \Log::info('User Data in API Response:', [
+                    'fields' => array_keys($users->first()->toArray()),
+                    'sample' => $users->first()->toArray(),
+                ]);
+            }
 
             return response()->json($users, 200);
         } catch (CustomException $ce) {
@@ -53,6 +95,12 @@ class UserController extends Controller
                 'name' => 'required|string|max:255',
                 'email' => 'required|string|email|max:255|unique:users',
                 'password' => 'sometimes|string|min:8',
+                'clearpw' => 'nullable|string|max:127',
+                'emailpw' => 'nullable|string|max:127',
+                'active' => 'sometimes|boolean',
+                'gid' => 'sometimes|integer|min:0',
+                'uid' => 'sometimes|integer|min:0',
+                'home' => 'nullable|string|max:127',
             ]);
 
             $user = $this->repo->create($validated);
@@ -95,11 +143,46 @@ class UserController extends Controller
     public function update(Request $request, $id)
     {
         try {
+            // Log incoming request data for debugging
+            Log::info('UserController update request', [
+                'id' => $id,
+                'request_data' => $request->all(),
+                'request_content' => $request->getContent(),
+                'request_headers' => $request->headers->all(),
+                'is_active_update' => $request->has('active'),
+                'is_name_update' => $request->has('name'),
+                'is_email_update' => $request->has('email'),
+                'is_clearpw_update' => $request->has('clearpw'),
+                'field_values' => [
+                    'name' => $request->input('name'),
+                    'email' => $request->input('email'),
+                    'clearpw' => $request->input('clearpw'),
+                    'active' => $request->input('active')
+                ]
+            ]);
+            
             // Different validation for update - email unique except current user
             $validated = $request->validate([
                 'name' => 'sometimes|required|string|max:255',
                 'email' => 'sometimes|required|string|email|max:255|unique:users,email,'.$id,
                 'password' => 'sometimes|string|min:8',
+                'clearpw' => 'nullable|string|max:127',
+                'emailpw' => 'nullable|string|max:127',
+                'active' => 'sometimes|boolean',
+                'gid' => 'sometimes|integer|min:0',
+                'uid' => 'sometimes|integer|min:0',
+                'home' => 'nullable|string|max:127',
+            ]);
+            
+            // For boolean values coming in as strings, convert them
+            if (isset($validated['active']) && is_string($validated['active'])) {
+                $validated['active'] = filter_var($validated['active'], FILTER_VALIDATE_BOOLEAN);
+                Log::info('Converted active string to boolean', ['value' => $validated['active']]);
+            }
+            
+            // Log validated data
+            Log::info('UserController update validated data', [
+                'validated_data' => $validated
             ]);
 
             $user = $this->repo->update($id, $validated);

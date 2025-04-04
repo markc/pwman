@@ -21,7 +21,7 @@ import {
     VisibilityState,
 } from '@tanstack/react-table';
 import { ArrowDown, ArrowUp, ChevronDown, FileDown, Plus, Search, Trash2 } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Button } from './ui/button';
 // import { Checkbox } from './ui/checkbox';
 import { Input } from './ui/input';
@@ -73,16 +73,25 @@ export function DataTable<TData, TValue>({
     tableRef?: React.MutableRefObject<unknown>; // Add optional table ref for external control
     totalCount?: number; // The actual total count of records from the server
 }) {
+    // All column visibility defaults
+    console.log("Setting up column visibility");
     const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({
-        // By default, hide these columns
+        // Show only Name, Email and Clear Password by default
         id: false,
+        name: true,
+        email: true,
         'Created at': false,
         email_verified_at: false,
         password: false,
         remember_token: false,
-        // Also update the column ID for the Last update column
-        'Last update': false, // Remove any old ID
-        'Updated at': true, // Show the Updated at column
+        'Last update': false, 
+        'Updated at': false,  // Hide Updated at column
+        clearpw: true,        // Show Clear Password column
+        emailpw: false,
+        active: false,        // Hide Active column
+        uid: false,
+        gid: false,
+        home: false
     });
     const [sorting, setSorting] = useState<SortingState>(initialSorting);
     const [rowSelection, setRowSelection] = useState<RowSelectionState>(initialRowSelection);
@@ -105,6 +114,12 @@ export function DataTable<TData, TValue>({
         }
     };
 
+    // Debug column definitions
+    console.log("Column definitions:", columns.map(col => ({
+        id: col.id || col.accessorKey,
+        accessorKey: col.accessorKey
+    })));
+    
     const table = useReactTable({
         data,
         columns,
@@ -129,6 +144,15 @@ export function DataTable<TData, TValue>({
         enableRowSelection: true,
         enableMultiRowSelection: true,
     });
+
+    // Log the column visibility when it changes
+    useEffect(() => {
+        console.log("Column visibility state:", columnVisibility);
+        console.log("All table columns:", table.getAllColumns().map(c => ({
+            id: c.id,
+            isVisible: c.getIsVisible()
+        })));
+    }, [columnVisibility, table]);
 
     // If tableRef is provided, expose the table instance
     if (tableRef) {

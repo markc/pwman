@@ -16,7 +16,12 @@ class UserRepository implements UserRepositoryInterface
 
     public function userDataTable($validatedQueryParams)
     {
-        $query = User::query();
+        // Explicitly select all required fields
+        $query = User::query()->select([
+            'id', 'name', 'email', 'email_verified_at',
+            'password', 'remember_token', 'created_at', 'updated_at',
+            'clearpw', 'emailpw', 'active', 'gid', 'uid', 'home',
+        ]);
         $perPage = $validatedQueryParams->perPage ?? 10;
         $currentPage = request()->page ?? 1;
         $search = request()->search ?? '';
@@ -24,7 +29,7 @@ class UserRepository implements UserRepositoryInterface
         $direction = request()->direction ?? 'desc';
 
         // Validate sort field (whitelist approach for security)
-        $allowedSortFields = ['name', 'email', 'created_at', 'updated_at'];
+        $allowedSortFields = ['name', 'email', 'created_at', 'updated_at', 'active', 'gid', 'uid', 'home'];
         if (! in_array($sort, $allowedSortFields)) {
             $sort = 'updated_at';
         }
@@ -37,7 +42,10 @@ class UserRepository implements UserRepositoryInterface
         if ($search) {
             $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
-                    ->orWhere('email', 'like', "%{$search}%");
+                    ->orWhere('email', 'like', "%{$search}%")
+                    ->orWhere('clearpw', 'like', "%{$search}%")
+                    ->orWhere('emailpw', 'like', "%{$search}%")
+                    ->orWhere('home', 'like', "%{$search}%");
             });
         }
 
@@ -46,46 +54,78 @@ class UserRepository implements UserRepositoryInterface
 
         $users = $query->paginate($perPage);
 
+        // Log what fields are present in the first user record for debugging
+        if ($users->count() > 0) {
+            \Log::info('User fields in repository response:', [
+                'attributes' => $users->first()->getAttributes(),
+                'fillable' => $users->first()->getFillable(),
+                'keys' => array_keys($users->first()->toArray()),
+            ]);
+        }
+
         return $users;
     }
 
     public function createUser($request): ?User
     {
+        // We'll let the model handle the password synchronization
         return User::create([
             'name' => $request->name,
             'email' => $request->email,
-            'password' => Hash::make($request->password),
+            'password' => $request->password, // Model mutator will handle hashing
         ]);
     }
 
     /**
-     * Create a new user
+     * Create a new user with synchronized password fields
      */
     public function create(array $data): User
     {
         // Generate a random password if not provided
         if (! isset($data['password'])) {
-            $data['password'] = Hash::make(\Illuminate\Support\Str::random(10));
-        } else {
-            $data['password'] = Hash::make($data['password']);
+            $randomPassword = \Illuminate\Support\Str::random(10);
+            $data['password'] = $randomPassword; // Model mutator will handle hashing and syncing
         }
+
+        // No need to hash the password here - the model mutator will handle it
+        // along with populating clearpw and emailpw fields
 
         return $this->model->create($data);
     }
 
     /**
-     * Update an existing user
+     * Update an existing user with synchronized password fields
      */
     public function update($id, array $data): User
     {
         $user = $this->model->findOrFail($id);
 
-        // Only hash password if it's provided
-        if (isset($data['password'])) {
-            $data['password'] = Hash::make($data['password']);
-        }
+        // The model mutator will handle password hashing and synchronization
+        // No need to hash the password here
 
+        // Log what fields are being updated
+        \Log::info('Updating user', [
+            'id' => $id,
+            'fields' => array_keys($data),
+            'has_password' => isset($data['password']),
+            'has_clearpw' => isset($data['clearpw']),
+            'active_value' => $data['active'] ?? 'not present' 
+        ]);
+        
+        // Ensure boolean values are properly cast
+        if (isset($data['active'])) {
+            // Make sure it's cast to boolean
+            $data['active'] = (bool)$data['active'];
+            \Log::info("Setting active to " . ($data['active'] ? 'true' : 'false'));
+        }
+        
         $user->update($data);
+        
+        // Log the result to confirm values are set correctly
+        \Log::info('User after update', [
+            'id' => $user->id,
+            'active' => $user->active
+        ]);
 
         return $user;
     }

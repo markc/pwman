@@ -9,6 +9,12 @@ export interface User {
     created_at: string;
     updated_at: string;
     avatar?: string | null;
+    clearpw?: string | null;
+    emailpw?: string | null;
+    active?: boolean;
+    gid?: number;
+    uid?: number;
+    home?: string | null;
 }
 
 export interface Auth {
