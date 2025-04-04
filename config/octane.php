@@ -135,7 +135,7 @@ return [
     ],
 
     'flush' => [
-        \Barryvdh\Debugbar\LaravelDebugbar::class,
+        // Add classes to flush here
     ],
 
     /*
