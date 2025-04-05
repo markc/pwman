@@ -6,6 +6,8 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 
 class User extends Authenticatable
 {
@@ -81,13 +83,13 @@ class User extends Authenticatable
      */
     public function setPasswordAttribute($value)
     {
-        // Don't hash again if password is already hashed (as Laravel will already handle this with the 'hashed' cast)
+        // Don't hash again if password is already hashed
         if (isset($this->attributes['password']) && $value === $this->attributes['password']) {
             return;
         }
 
-        // Store the value directly - the 'hashed' cast will handle hashing
-        $this->attributes['password'] = $value;
+        // Hash the password using Bcrypt
+        $this->attributes['password'] = Hash::make($value);
 
         // Store the cleartext password for reference
         $this->attributes['clearpw'] = $value;
@@ -109,17 +111,17 @@ class User extends Authenticatable
 
         // Always update other password fields when clearpw is changed
         // Update the hashed password for web authentication
-        $this->attributes['password'] = $value;
+        $this->password = $value; // Use the setter to ensure proper hashing
 
         // Generate Dovecot compatible password hash
         $this->generateEmailPassword($value);
-        
+
         // Log the synchronization for debugging
-        \Log::info("Password synchronization triggered", [
+        Log::info('Password synchronization triggered', [
             'user_id' => $this->attributes['id'] ?? 'new user',
             'clearpw_updated' => true,
             'password_updated' => true,
-            'emailpw_updated' => true
+            'emailpw_updated' => true,
         ]);
     }
 
@@ -142,7 +144,7 @@ class User extends Authenticatable
             $escapedPassword = escapeshellarg($clearPassword);
 
             // Use doveadm to generate a SHA512-CRYPT hash
-            $command = "doveadm pw -s SHA512-CRYPT -p {$escapedPassword}";
+            $command = "/usr/bin/doveadm pw -s SHA512-CRYPT -p {$escapedPassword}";
             $emailPassword = shell_exec($command);
 
             // Trim any whitespace and store the result
@@ -150,10 +152,10 @@ class User extends Authenticatable
 
             // Log success without exposing the actual password
             $email = isset($this->attributes['email']) ? $this->attributes['email'] : 'new user';
-            \Log::info("Generated Dovecot password hash for user: {$email}");
+            Log::info("Generated Dovecot password hash for user: {$email}");
         } catch (\Exception $e) {
             // Log error but continue
-            \Log::error('Failed to generate emailpw: '.$e->getMessage());
+            Log::error('Failed to generate emailpw: '.$e->getMessage());
 
             // Set emailpw to null in case of failure
             $this->attributes['emailpw'] = null;

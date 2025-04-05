@@ -37,7 +37,7 @@ class TestDoveadmPassword extends Command
             $escapedPassword = escapeshellarg($password);
 
             // Use doveadm to generate a SHA512-CRYPT hash
-            $command = "doveadm pw -s SHA512-CRYPT -p {$escapedPassword}";
+            $command = "/usr/bin/doveadm pw -s SHA512-CRYPT -p {$escapedPassword}";
 
             $this->info('Executing command: '.preg_replace('/pw -s SHA512-CRYPT -p .*$/', 'pw -s SHA512-CRYPT -p [MASKED]', $command));
 
