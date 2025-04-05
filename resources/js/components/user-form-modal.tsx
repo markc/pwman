@@ -98,8 +98,53 @@ export function UserFormModal({ isOpen, onClose, onSuccess, onError, user, title
 
         if (isEditMode && user) {
             // Update existing user with Inertia
-            router.put(`/api/users/${user.id}`, dataToSubmit, {
+            // Use direct fetch to avoid Inertia issues
+            // Log the CSRF token for debugging
+            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+            console.log('Updating user with data:', dataToSubmit, 'CSRF token:', csrfToken ? 'Present' : 'Missing');
+            
+            fetch(`/api/users/${user.id}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+                },
+                body: JSON.stringify(dataToSubmit),
+                credentials: 'same-origin'
+            }).then(async response => {
+                const result = await response.json();
+                setIsSubmitting(false);
+                
+                if (response.ok) {
+                    onClose();
+                    onSuccess(`User ${formData.name} has been updated successfully.`);
+                } else {
+                    const errorMessages = result.message || 'Update failed';
+                    console.error('Update errors:', result);
+                    onError(errorMessages);
+                }
+            }).catch(error => {
+                setIsSubmitting(false);
+                console.error('Update errors:', error);
+                
+                // More detailed error logging
+                if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
+                    console.error('Network error details:', {
+                        url: `/api/users/${user.id}`,
+                        error: error.toString(),
+                        stack: error.stack
+                    });
+                    onError('Network connection error: Unable to reach the server');
+                } else {
+                    onError(`Network error: ${error.message || 'Unknown error occurred'}`);
+                }
+            });
+            
+            // Comment out the Inertia router call
+            /*router.put(`/api/users/${user.id}`, dataToSubmit, {
                 preserveScroll: true,
+                preserveState: true,
                 onSuccess: () => {
                     setIsSubmitting(false);
                     onClose();
@@ -111,10 +156,36 @@ export function UserFormModal({ isOpen, onClose, onSuccess, onError, user, title
                     console.error('Update errors:', errors);
                     onError(errorMessages);
                 },
-            });
+            });*/
         } else {
-            // Create new user with Inertia
-            router.post('/api/users', dataToSubmit, {
+            // Create new user with direct fetch to avoid Inertia issues
+            fetch('/api/users', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+                },
+                body: JSON.stringify(dataToSubmit)
+            }).then(async response => {
+                const result = await response.json();
+                setIsSubmitting(false);
+                
+                if (response.ok) {
+                    onClose();
+                    onSuccess(`User ${formData.name} has been created successfully.`);
+                } else {
+                    const errorMessages = result.message || 'Create failed';
+                    console.error('Create errors:', result);
+                    onError(errorMessages);
+                }
+            }).catch(error => {
+                setIsSubmitting(false);
+                console.error('Create errors:', error);
+                onError('Network error occurred');
+            });
+            
+            // Comment out the original Inertia router call
+            /*router.post('/api/users', dataToSubmit, {
                 preserveScroll: true,
                 onSuccess: () => {
                     setIsSubmitting(false);
@@ -127,7 +198,7 @@ export function UserFormModal({ isOpen, onClose, onSuccess, onError, user, title
                     console.error('Create errors:', errors);
                     onError(errorMessages);
                 },
-            });
+            });*/
         }
     };
 

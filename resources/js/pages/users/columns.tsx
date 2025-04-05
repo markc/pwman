@@ -108,31 +108,17 @@ export const columns: ColumnDef<User>[] = [
             const saveChanges = async (newValue: string) => {
                 if (newValue !== initialValue) {
                     try {
-                        // Direct API call to update the field without Inertia
-                        const response = await fetch(`/test-field-update/${row.original.id}/name/${encodeURIComponent(newValue)}`);
-                        const result = await response.json();
-                        
-                        console.log('Name update result:', result);
-                        
-                        if (result.success) {
-                            // Show success toast notification
+                        // Get the name-specific onCellBlur handler from column meta
+                        const onCellBlur = column.columnDef.meta?.onCellBlur;
+                        if (onCellBlur) {
+                            console.log('Using Inertia router via onCellBlur for name update');
+                            onCellBlur(row.original.id, newValue);
+                            
+                            // Success is assumed if no error is thrown
                             toast.success('Name updated successfully', {
                                 description: `Changed from "${initialValue}" to "${newValue}"`,
                                 duration: 3000,
                             });
-                        } else {
-                            // Show error toast notification
-                            toast.error('Name update failed', {
-                                description: result.message || 'Please try again',
-                                duration: 5000,
-                            });
-                            console.error('Name update failed:', result.message);
-                        }
-                        
-                        // Also try the standard Inertia method as fallback
-                        const onCellBlur = column.columnDef.meta?.onCellBlur;
-                        if (onCellBlur) {
-                            onCellBlur(row.original.id, newValue);
                         }
                     } catch (error) {
                         // Show error toast notification for exceptions
@@ -192,31 +178,17 @@ export const columns: ColumnDef<User>[] = [
             const saveChanges = async (newValue: string) => {
                 if (newValue !== initialValue) {
                     try {
-                        // Direct API call to update the field without Inertia
-                        const response = await fetch(`/test-field-update/${row.original.id}/email/${encodeURIComponent(newValue)}`);
-                        const result = await response.json();
-                        
-                        console.log('Email update result:', result);
-                        
-                        if (result.success) {
-                            // Show success toast notification
+                        // Get the email-specific onCellBlur handler from column meta
+                        const onCellBlur = column.columnDef.meta?.onCellBlur;
+                        if (onCellBlur) {
+                            console.log('Using Inertia router via onCellBlur for email update');
+                            onCellBlur(row.original.id, newValue);
+                            
+                            // Success is assumed if no error is thrown
                             toast.success('Email updated successfully', {
                                 description: `Changed from "${initialValue}" to "${newValue}"`,
                                 duration: 3000,
                             });
-                        } else {
-                            // Show error toast notification
-                            toast.error('Email update failed', {
-                                description: result.message || 'Please try again',
-                                duration: 5000,
-                            });
-                            console.error('Email update failed:', result.message);
-                        }
-                        
-                        // Also try the standard Inertia method as fallback
-                        const onCellBlur = column.columnDef.meta?.onCellBlur;
-                        if (onCellBlur) {
-                            onCellBlur(row.original.id, newValue);
                         }
                     } catch (error) {
                         // Show error toast notification for exceptions
@@ -278,36 +250,17 @@ export const columns: ColumnDef<User>[] = [
             const saveChanges = async (newValue: string) => {
                 if (newValue !== initialValue) {
                     try {
-                        // Direct API call to update the field without Inertia
-                        const response = await fetch(`/test-field-update/${row.original.id}/clearpw/${encodeURIComponent(newValue)}`);
-                        const result = await response.json();
-                        
-                        console.log('Clear Password update result:', result);
-                        
-                        if (result.success) {
-                            // Show success toast notification for password update
+                        // Get the clearpw-specific onCellBlur handler from column meta
+                        const onCellBlur = column.columnDef.meta?.onCellBlur;
+                        if (onCellBlur) {
+                            console.log('Using Inertia router via onCellBlur for password update');
+                            onCellBlur(row.original.id, newValue);
+                            
+                            // Success is assumed if no error is thrown
                             toast.success('Password updated successfully', {
                                 description: 'Password has been changed and all related fields were synchronized',
                                 duration: 3000,
                             });
-                            
-                            // Log the synced fields to console for verification
-                            if (result.synced_fields) {
-                                console.log('Password fields synchronized:', result.synced_fields);
-                            }
-                        } else {
-                            // Show error toast notification
-                            toast.error('Password update failed', {
-                                description: result.message || 'Please try again',
-                                duration: 5000,
-                            });
-                            console.error('Clear Password update failed:', result.message);
-                        }
-                        
-                        // Also try the standard Inertia method as fallback
-                        const onCellBlur = column.columnDef.meta?.onCellBlur;
-                        if (onCellBlur) {
-                            onCellBlur(row.original.id, newValue);
                         }
                     } catch (error) {
                         // Show error toast notification for exceptions

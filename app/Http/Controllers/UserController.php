@@ -8,6 +8,7 @@ use App\Services\DataTableParamsService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use Inertia\Inertia;
 
 class UserController extends Controller
 {
@@ -123,7 +124,11 @@ class UserController extends Controller
                 'line' => $th->getLine(),
             ]));
 
-            if ($request->wantsJson()) {
+            if ($request->header('X-Inertia')) {
+                return back()->withErrors([
+                    'error' => 'An unexpected error occurred: '.$th->getMessage(),
+                ]);
+            } else if ($request->wantsJson()) {
                 return response()->json([
                     'success' => false,
                     'message' => 'An unexpected error occurred.',
@@ -142,6 +147,17 @@ class UserController extends Controller
      */
     public function update(Request $request, $id)
     {
+        // Log raw request for debugging network errors
+        Log::info('Raw update request received', [
+            'url' => $request->fullUrl(),
+            'method' => $request->method(),
+            'content_type' => $request->header('Content-Type'),
+            'accept' => $request->header('Accept'),
+            'user_agent' => $request->header('User-Agent'),
+            'is_ajax' => $request->ajax(),
+            'is_json' => $request->isJson(),
+            'raw_content' => $request->getContent(),
+        ]);
         try {
             // Log incoming request data for debugging
             Log::info('UserController update request', [
@@ -187,7 +203,8 @@ class UserController extends Controller
 
             $user = $this->repo->update($id, $validated);
 
-            if ($request->wantsJson()) {
+            // Always return JSON for API requests
+            if ($request->wantsJson() || $request->isJson() || $request->ajax() || $request->header('Accept') == 'application/json') {
                 return response()->json([
                     'success' => true,
                     'message' => 'User updated successfully',
@@ -205,7 +222,11 @@ class UserController extends Controller
                 'line' => $th->getLine(),
             ]));
 
-            if ($request->wantsJson()) {
+            if ($request->header('X-Inertia')) {
+                return back()->withErrors([
+                    'error' => 'An unexpected error occurred: '.$th->getMessage(),
+                ]);
+            } else if ($request->wantsJson()) {
                 return response()->json([
                     'success' => false,
                     'message' => 'An unexpected error occurred.',
@@ -258,7 +279,11 @@ class UserController extends Controller
                 'line' => $th->getLine(),
             ]));
 
-            if ($request->wantsJson()) {
+            if ($request->header('X-Inertia')) {
+                return back()->withErrors([
+                    'error' => 'An unexpected error occurred: '.$th->getMessage(),
+                ]);
+            } else if ($request->wantsJson()) {
                 return response()->json([
                     'success' => false,
                     'message' => 'An unexpected error occurred.',

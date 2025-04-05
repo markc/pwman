@@ -71,8 +71,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
         return dd(phpinfo());
     });
     
-    // Test route for direct field updates
-    Route::get('test-field-update/{id}/{field}/{value}', function ($id, $field, $value) {
+    // Route for direct field updates - changed from GET to POST for better security
+    Route::post('test-field-update/{id}/{field}', function (\Illuminate\Http\Request $request, $id, $field) {
+        $value = $request->input('value');
+        
         \Log::info("Direct field update requested", [
             'id' => $id,
             'field' => $field,
