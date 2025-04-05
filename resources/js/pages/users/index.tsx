@@ -562,7 +562,7 @@ export default function Index() {
             'Base columns:',
             baseColumns.map((col) => {
                 // Safely access column identifiers
-                return col.id || (col as any).accessorKey || 'unknown';
+                return col.id || (col as { accessorKey?: string }).accessorKey || 'unknown';
             }),
         );
 
@@ -581,7 +581,7 @@ export default function Index() {
             }
 
             // Type guard to check if column has accessorKey property
-            const hasAccessorKey = (col: any): col is { accessorKey: string } =>
+            const hasAccessorKey = (col: { id?: string; accessorKey?: string }): col is { accessorKey: string } =>
                 'accessorKey' in col && typeof col.accessorKey === 'string';
 
             // Add handlers to name column for inline editing
