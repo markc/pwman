@@ -93,14 +93,14 @@ export default function Index() {
                 }
 
                 const response = await getData(page, search, pageSize, sortField, sortDirection);
-                console.log("API response data:", response.data);
-                
+                console.log('API response data:', response.data);
+
                 // Log the first data item to see all available fields
                 if (response.data.length > 0) {
-                    console.log("First data item fields:", Object.keys(response.data[0]));
-                    console.log("First data item complete:", response.data[0]);
+                    console.log('First data item fields:', Object.keys(response.data[0]));
+                    console.log('First data item complete:', response.data[0]);
                 }
-                
+
                 setData(response.data);
                 setPageCount(response.last_page);
                 // Store total count from response for accurate count display
@@ -153,42 +153,42 @@ export default function Index() {
     };
 
     // Handle opening modal for editing a user
-    const handleEditUser = async (user: User) => {
+    const handleEditUser = useCallback(async (user: User) => {
         try {
             // Fetch the latest user data directly from the server
             const response = await fetch(`/api/users/${user.id}`);
-            
+
             if (!response.ok) {
                 throw new Error(`Failed to fetch latest user data: ${response.statusText}`);
             }
-            
+
             const latestUserData = await response.json();
-            
+
             // If this is a direct response, unwrap it from the 'data' property if necessary
             const userData = latestUserData.data || latestUserData;
-            
-            console.log("Latest user data for modal:", userData);
-            
+
+            console.log('Latest user data for modal:', userData);
+
             // Update with the latest data
             setCurrentUser(userData);
             setFormModalTitle('Edit User');
             setIsFormModalOpen(true);
         } catch (error) {
             // If fetch fails, fall back to using the provided user data
-            console.error("Error fetching latest user data:", error);
-            toast.error("Could not fetch latest user data. Using cached data instead.");
-            
+            console.error('Error fetching latest user data:', error);
+            toast.error('Could not fetch latest user data. Using cached data instead.');
+
             setCurrentUser(user);
             setFormModalTitle('Edit User');
             setIsFormModalOpen(true);
         }
-    };
+    }, []);
 
     // Handle opening delete confirmation modal
-    const handleDeleteClick = (user: User) => {
+    const handleDeleteClick = useCallback((user: User) => {
         setUserToDelete(user);
         setIsDeleteModalOpen(true);
-    };
+    }, []);
 
     // Handle actual user deletion with Inertia
     const handleDeleteConfirm = async () => {
@@ -412,126 +412,160 @@ export default function Index() {
     // Generic field update handler for all inline editable fields
     const handleFieldUpdate = useCallback((userId: string | number, fieldName: string, newValue: string) => {
         // Optimistically update the local data
-        setData((prev) => prev.map((user) => 
-            user.id === userId ? { ...user, [fieldName]: newValue } : user
-        ));
+        setData((prev) => prev.map((user) => (user.id === userId ? { ...user, [fieldName]: newValue } : user)));
     }, []);
 
-    // Specific field update handlers 
-    const handleNameUpdate = useCallback((userId: string | number, newValue: string) => {
-        handleFieldUpdate(userId, 'name', newValue);
-    }, [handleFieldUpdate]);
-    
-    const handleEmailUpdate = useCallback((userId: string | number, newValue: string) => {
-        handleFieldUpdate(userId, 'email', newValue);
-    }, [handleFieldUpdate]);
-    
-    const handleClearPwUpdate = useCallback((userId: string | number, newValue: string) => {
-        handleFieldUpdate(userId, 'clearpw', newValue);
-    }, [handleFieldUpdate]);
-    
+    // Specific field update handlers
+    const handleNameUpdate = useCallback(
+        (userId: string | number, newValue: string) => {
+            handleFieldUpdate(userId, 'name', newValue);
+        },
+        [handleFieldUpdate],
+    );
+
+    const handleEmailUpdate = useCallback(
+        (userId: string | number, newValue: string) => {
+            handleFieldUpdate(userId, 'email', newValue);
+        },
+        [handleFieldUpdate],
+    );
+
+    const handleClearPwUpdate = useCallback(
+        (userId: string | number, newValue: string) => {
+            handleFieldUpdate(userId, 'clearpw', newValue);
+        },
+        [handleFieldUpdate],
+    );
+
     // Field blur handlers that actually save the data
-    const handleNameBlur = useCallback(async (userId: string | number, newValue: string) => {
-        const toastId = toast.loading('Updating name...');
-        try {
-            // Make a simple update to just change the name
-            const apiResponse = await fetch(`/api/users/${userId}`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
-                },
-                body: JSON.stringify({ name: newValue }),
-                credentials: 'same-origin'
-            });
-            
-            const result = await apiResponse.json();
-            
-            if (apiResponse.ok) {
-                toast.success('Name updated successfully', { id: toastId, duration: 2000 });
-                // Update the data table
-                fetchData(pagination.pageIndex + 1, debouncedSearchQuery, pagination.pageSize);
-            } else {
-                toast.error(`Failed to update: ${result.message || 'Server error'}`, { id: toastId, duration: 3000 });
-                fetchData(pagination.pageIndex + 1, debouncedSearchQuery, pagination.pageSize);
-            }
-        } catch (error) {
-            console.error('Error updating name:', error);
-            toast.error('Network error when updating name', { id: toastId, duration: 3000 });
-            fetchData(pagination.pageIndex + 1, debouncedSearchQuery, pagination.pageSize);
-        }
-    }, [pagination.pageIndex, pagination.pageSize, debouncedSearchQuery, fetchData]);
-    
-    const handleEmailBlur = useCallback(async (userId: string | number, newValue: string) => {
-        const toastId = toast.loading('Updating email...');
-        try {
-            // Make a simple update to just change the email
-            const apiResponse = await fetch(`/api/users/${userId}`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
-                },
-                body: JSON.stringify({ email: newValue }),
-                credentials: 'same-origin'
-            });
-            
-            const result = await apiResponse.json();
-            
-            if (apiResponse.ok) {
-                toast.success('Email updated successfully', { id: toastId, duration: 2000 });
-                // Update the data table
-                fetchData(pagination.pageIndex + 1, debouncedSearchQuery, pagination.pageSize);
-            } else {
-                toast.error(`Failed to update: ${result.message || 'Server error'}`, { id: toastId, duration: 3000 });
+    const handleNameBlur = useCallback(
+        async (userId: string | number, newValue: string) => {
+            const toastId = toast.loading('Updating name...');
+            try {
+                // Make a simple update to just change the name
+                const apiResponse = await fetch(`/api/users/${userId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        Accept: 'application/json',
+                        'X-CSRF-TOKEN':
+                            document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
+                    },
+                    body: JSON.stringify({ name: newValue }),
+                    credentials: 'same-origin',
+                });
+
+                const result = await apiResponse.json();
+
+                if (apiResponse.ok) {
+                    toast.success('Name updated successfully', { id: toastId, duration: 2000 });
+                    // Update the data table
+                    fetchData(pagination.pageIndex + 1, debouncedSearchQuery, pagination.pageSize);
+                } else {
+                    toast.error(`Failed to update: ${result.message || 'Server error'}`, {
+                        id: toastId,
+                        duration: 3000,
+                    });
+                    fetchData(pagination.pageIndex + 1, debouncedSearchQuery, pagination.pageSize);
+                }
+            } catch (error) {
+                console.error('Error updating name:', error);
+                toast.error('Network error when updating name', { id: toastId, duration: 3000 });
                 fetchData(pagination.pageIndex + 1, debouncedSearchQuery, pagination.pageSize);
             }
-        } catch (error) {
-            console.error('Error updating email:', error);
-            toast.error('Network error when updating email', { id: toastId, duration: 3000 });
-            fetchData(pagination.pageIndex + 1, debouncedSearchQuery, pagination.pageSize);
-        }
-    }, [pagination.pageIndex, pagination.pageSize, debouncedSearchQuery, fetchData]);
-    
-    const handleClearPwBlur = useCallback(async (userId: string | number, newValue: string) => {
-        const toastId = toast.loading('Updating password...');
-        try {
-            // Make a simple update to just change the password
-            const apiResponse = await fetch(`/api/users/${userId}`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
-                },
-                body: JSON.stringify({ clearpw: newValue }),
-                credentials: 'same-origin'
-            });
-            
-            const result = await apiResponse.json();
-            
-            if (apiResponse.ok) {
-                toast.success('Password updated successfully', { id: toastId, duration: 2000 });
-                // Update the data table
-                fetchData(pagination.pageIndex + 1, debouncedSearchQuery, pagination.pageSize);
-            } else {
-                toast.error(`Failed to update: ${result.message || 'Server error'}`, { id: toastId, duration: 3000 });
+        },
+        [pagination.pageIndex, pagination.pageSize, debouncedSearchQuery, fetchData],
+    );
+
+    const handleEmailBlur = useCallback(
+        async (userId: string | number, newValue: string) => {
+            const toastId = toast.loading('Updating email...');
+            try {
+                // Make a simple update to just change the email
+                const apiResponse = await fetch(`/api/users/${userId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        Accept: 'application/json',
+                        'X-CSRF-TOKEN':
+                            document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
+                    },
+                    body: JSON.stringify({ email: newValue }),
+                    credentials: 'same-origin',
+                });
+
+                const result = await apiResponse.json();
+
+                if (apiResponse.ok) {
+                    toast.success('Email updated successfully', { id: toastId, duration: 2000 });
+                    // Update the data table
+                    fetchData(pagination.pageIndex + 1, debouncedSearchQuery, pagination.pageSize);
+                } else {
+                    toast.error(`Failed to update: ${result.message || 'Server error'}`, {
+                        id: toastId,
+                        duration: 3000,
+                    });
+                    fetchData(pagination.pageIndex + 1, debouncedSearchQuery, pagination.pageSize);
+                }
+            } catch (error) {
+                console.error('Error updating email:', error);
+                toast.error('Network error when updating email', { id: toastId, duration: 3000 });
                 fetchData(pagination.pageIndex + 1, debouncedSearchQuery, pagination.pageSize);
             }
-        } catch (error) {
-            console.error('Error updating password:', error);
-            toast.error('Network error when updating password', { id: toastId, duration: 3000 });
-            fetchData(pagination.pageIndex + 1, debouncedSearchQuery, pagination.pageSize);
-        }
-    }, [pagination.pageIndex, pagination.pageSize, debouncedSearchQuery, fetchData]);
+        },
+        [pagination.pageIndex, pagination.pageSize, debouncedSearchQuery, fetchData],
+    );
+
+    const handleClearPwBlur = useCallback(
+        async (userId: string | number, newValue: string) => {
+            const toastId = toast.loading('Updating password...');
+            try {
+                // Make a simple update to just change the password
+                const apiResponse = await fetch(`/api/users/${userId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        Accept: 'application/json',
+                        'X-CSRF-TOKEN':
+                            document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
+                    },
+                    body: JSON.stringify({ clearpw: newValue }),
+                    credentials: 'same-origin',
+                });
+
+                const result = await apiResponse.json();
+
+                if (apiResponse.ok) {
+                    toast.success('Password updated successfully', { id: toastId, duration: 2000 });
+                    // Update the data table
+                    fetchData(pagination.pageIndex + 1, debouncedSearchQuery, pagination.pageSize);
+                } else {
+                    toast.error(`Failed to update: ${result.message || 'Server error'}`, {
+                        id: toastId,
+                        duration: 3000,
+                    });
+                    fetchData(pagination.pageIndex + 1, debouncedSearchQuery, pagination.pageSize);
+                }
+            } catch (error) {
+                console.error('Error updating password:', error);
+                toast.error('Network error when updating password', { id: toastId, duration: 3000 });
+                fetchData(pagination.pageIndex + 1, debouncedSearchQuery, pagination.pageSize);
+            }
+        },
+        [pagination.pageIndex, pagination.pageSize, debouncedSearchQuery, fetchData],
+    );
 
     // Memoize columns to avoid unnecessary re-renders
     const columns = useMemo(() => {
         // Log the base columns for debugging
-        console.log("Base columns:", baseColumns.map(col => col.id || col.accessorKey));
-        
+        console.log(
+            'Base columns:',
+            baseColumns.map((col) => {
+                // Safely access column identifiers
+                return col.id || (col as any).accessorKey || 'unknown';
+            }),
+        );
+
         // Add handlers to all columns that need them
         return baseColumns.map((column) => {
             // Add handlers to action column
@@ -546,8 +580,12 @@ export default function Index() {
                 };
             }
 
+            // Type guard to check if column has accessorKey property
+            const hasAccessorKey = (col: any): col is { accessorKey: string } =>
+                'accessorKey' in col && typeof col.accessorKey === 'string';
+
             // Add handlers to name column for inline editing
-            if ('accessorKey' in column && column.accessorKey === 'name') {
+            if (hasAccessorKey(column) && column.accessorKey === 'name') {
                 return {
                     ...column,
                     meta: {
@@ -557,9 +595,9 @@ export default function Index() {
                     },
                 };
             }
-            
+
             // Add handlers to email column for inline editing
-            if ('accessorKey' in column && column.accessorKey === 'email') {
+            if (hasAccessorKey(column) && column.accessorKey === 'email') {
                 return {
                     ...column,
                     meta: {
@@ -569,9 +607,9 @@ export default function Index() {
                     },
                 };
             }
-            
+
             // Add handlers to clearpw column for inline editing
-            if (column.id === 'clearpw' || ('accessorKey' in column && column.accessorKey === 'clearpw')) {
+            if (column.id === 'clearpw' || (hasAccessorKey(column) && column.accessorKey === 'clearpw')) {
                 return {
                     ...column,
                     meta: {
@@ -585,14 +623,14 @@ export default function Index() {
             return column;
         });
     }, [
-        handleNameUpdate, 
-        handleNameBlur, 
-        handleEmailUpdate, 
-        handleEmailBlur, 
-        handleClearPwUpdate, 
+        handleNameUpdate,
+        handleNameBlur,
+        handleEmailUpdate,
+        handleEmailBlur,
+        handleClearPwUpdate,
         handleClearPwBlur,
         handleEditUser,
-        handleDeleteClick
+        handleDeleteClick,
     ]);
 
     return (
